@@ -15,313 +15,297 @@ use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Input;
 use Illuminate\Support\Facades\Session;
 
-class Stats extends Controller {
+class Stats extends Controller
+{
 
-	public function __construct()
-	{
-		Session::put('tracker.stats.days', $this->getValue('days', 1));
+    public function __construct()
+    {
+        Session::put('tracker.stats.days', $this->getValue('days', 1));
 
-		Session::put('tracker.stats.page', $this->getValue('page', 'visits'));
+        Session::put('tracker.stats.page', $this->getValue('page', 'visits'));
 
-		$this->minutes = new Minutes(60 * 24 * Session::get('tracker.stats.days'));
+        $this->minutes = new Minutes(60 * 24 * Session::get('tracker.stats.days'));
 
-		$this->buildComposers();
-	}
+        $this->buildComposers();
+    }
 
-	public function index()
-	{
-		return $this->showPage(Session::get('tracker.stats.page'));
-	}
+    public function index()
+    {
+        return $this->showPage(Session::get('tracker.stats.page'));
+    }
 
-	public function showPage($page)
-	{
-		$me = $this;
+    public function showPage($page)
+    {
+        $me = $this;
 
-		if (method_exists($me, $page))
-		{
-			return $this->$page();
-		}
-	}
+        if (method_exists($me, $page)) {
+            return $this->$page();
+        }
+    }
 
-	public function visits()
-	{
-		return View::make('pragmarx/tracker::index')
-			->with('sessions', Tracker::sessions($this->minutes))
-			->with('title', 'Visits')
-			->with('username_column', Tracker::getConfig('authenticated_user_username_column'));
-	}
+    public function visits()
+    {
+        return View::make('pragmarx/tracker::index')
+            ->with('sessions', Tracker::sessions($this->minutes))
+            ->with('title', 'Visits')
+            ->with('username_column', Tracker::getConfig('authenticated_user_username_column'));
+    }
 
-	public function log($uuid)
-	{
-		return View::make('pragmarx/tracker::log')
-				->with('log', Tracker::sessionLog($uuid))
-				->with('uuid', $uuid)
-				->with('title', 'Log');
-	}
+    public function log($uuid)
+    {
+        return View::make('pragmarx/tracker::log')
+            ->with('log', Tracker::sessionLog($uuid))
+            ->with('uuid', $uuid)
+            ->with('title', 'Log');
+    }
 
-	public function summary()
-	{
-		return View::make('pragmarx/tracker::summary')
-				->with('title', 'Page Views Summary');
-	}
+    public function summary()
+    {
+        return View::make('pragmarx/tracker::summary')
+            ->with('title', 'Page Views Summary');
+    }
 
-	public function apiPageviews()
-	{
-		return Tracker::pageViews($this->minutes)->toJson();
-	}
+    public function apiPageviews()
+    {
+        return Tracker::pageViews($this->minutes)->toJson();
+    }
 
-	public function apiPageviewsByCountry()
-	{
-		return Tracker::pageViewsByCountry($this->minutes)->toJson();
-	}
+    public function apiPageviewsByCountry()
+    {
+        return Tracker::pageViewsByCountry($this->minutes)->toJson();
+    }
 
-	public function apiLog($uuid)
-	{
-		$query = Tracker::sessionLog($uuid, false);
+    public function apiLog($uuid)
+    {
+        $query = Tracker::sessionLog($uuid, false);
 
-		$query->select(array(
-			               'id',
-			               'session_id',
-			               'method',
-			               'path_id',
-			               'query_id',
-			               'route_path_id',
-			               'is_ajax',
-			               'is_secure',
-			               'is_json',
-			               'wants_json',
-			               'error_id',
-			               'updated_at',
-		               ));
+        $query->select(array(
+            'id',
+            'session_id',
+            'method',
+            'path_id',
+            'query_id',
+            'route_path_id',
+            'is_ajax',
+            'is_secure',
+            'is_json',
+            'wants_json',
+            'error_id',
+            'updated_at',
+        ));
 
-		return Datatables::of($query)
-			->edit_column('route_name', function($row) {
-					return 	$row->routePath
-							? $row->routePath->route->name . '<br>' . $row->routePath->route->action
-							: $row->path->path;
-			})
+        return Datatables::of($query)
+            ->edit_column('route_name', function ($row) {
+                return $row->routePath
+                    ? $row->routePath->route->name . '<br>' . $row->routePath->route->action
+                    : $row->path->path;
+            })
+            ->edit_column('route', function ($row) {
+                $route = null;
 
-			->edit_column('route', function($row) {
-				$route = null;
+                if ($row->routePath) {
+                    foreach ($row->routePath->parameters as $parameter) {
+                        $route .= ($route ? '<br>' : '') . $parameter->parameter . '=' . $parameter->value;
+                    }
+                }
 
-				if ($row->routePath)
-				{
-					foreach ($row->routePath->parameters as $parameter)
-					{
-						$route .= ($route ? '<br>' : '') . $parameter->parameter . '=' . $parameter->value;
-					}
-				}
+                return $route;
+            })
+            ->edit_column('query', function ($row) {
+                $query = null;
 
-				return $route;
-			})
+                if ($row->logQuery) {
+                    foreach ($row->logQuery->arguments as $argument) {
+                        $query .= ($query ? '<br>' : '') . $argument->argument . '=' . $argument->value;
+                    }
+                }
 
-			->edit_column('query', function($row) {
-				$query = null;
+                return $query;
+            })
+            ->edit_column('is_ajax', function ($row) {
+                return $row->is_ajax ? 'yes' : '';
+            })
+            ->edit_column('is_secure', function ($row) {
+                return $row->is_secure ? 'yes' : '';
+            })
+            ->edit_column('is_json', function ($row) {
+                return $row->is_json ? 'yes' : '';
+            })
+            ->edit_column('wants_json', function ($row) {
+                return $row->wants_json ? 'yes' : '';
+            })
+            ->edit_column('error', function ($row) {
+                return $row->error ? 'yes' : '';
+            })
+            ->make(true);
+    }
 
-				if ($row->logQuery)
-				{
-					foreach ($row->logQuery->arguments as $argument)
-					{
-						$query .= ($query ? '<br>' : '') . $argument->argument . '=' . $argument->value;
-					}
-				}
+    public function getValue($variable, $default = null)
+    {
+        if (Input::has($variable)) {
+            $value = Input::get($variable);
+        } else {
+            $value = Session::get('tracker.stats.' . $variable, $default);
+        }
 
-				return $query;
-			})
+        return $value;
+    }
 
-			->edit_column('is_ajax', function($row) {
-				return 	$row->is_ajax ? 'yes' : '';
-			})
+    public function users()
+    {
+        return View::make('pragmarx/tracker::users')
+            ->with('users', Tracker::users($this->minutes))
+            ->with('title', 'Users')
+            ->with('username_column', Tracker::getConfig('authenticated_user_username_column'));
+    }
 
-			->edit_column('is_secure', function($row) {
-				return 	$row->is_secure ? 'yes' : '';
-			})
+    private function events()
+    {
+        return View::make('pragmarx/tracker::events')
+            ->with('events', Tracker::events($this->minutes))
+            ->with('title', 'Events');
+    }
 
-			->edit_column('is_json', function($row) {
-				return 	$row->is_json ? 'yes' : '';
-			})
+    private function eventlogs()
+    {
+        return View::make('pragmarx/tracker::eventlogs')
+            ->with('eventlogs', Tracker::events($this->minutes))
+            ->with('title', 'Event Logs');
+    }
 
-			->edit_column('wants_json', function($row) {
-				return 	$row->wants_json ? 'yes' : '';
-			})
+    public function errors()
+    {
+        return View::make('pragmarx/tracker::errors')
+            ->with('error_log', Tracker::errors($this->minutes))
+            ->with('title', 'Errors');
+    }
 
-			->edit_column('error', function($row) {
-				return 	$row->error ? 'yes' : '';
-			})
+    public function apiErrors()
+    {
+        $query = Tracker::errors($this->minutes, false);
 
-			->make(true);
-	}
+        $query->select(array(
+            'id',
+            'error_id',
+            'session_id',
+            'path_id',
+            'updated_at',
+        ));
 
-	public function getValue($variable, $default = null)
-	{
-		if (Input::has($variable))
-		{
-			$value = Input::get($variable);
-		}
-		else
-		{
-			$value = Session::get('tracker.stats.'.$variable, $default);
-		}
+        return Datatables::of($query)
+            ->edit_column('updated_at', function ($row) {
+                return "{$row->updated_at->diffForHumans()}";
+            })
+            ->make(true);
+    }
 
-		return $value;
-	}
+    public function apiEvents()
+    {
+        $query = Tracker::events($this->minutes, false);
 
-	public function users()
-	{
-		return View::make('pragmarx/tracker::users')
-			->with('users', Tracker::users($this->minutes))
-			->with('title', 'Users')
-			->with('username_column', Tracker::getConfig('authenticated_user_username_column'));
-	}
+        return Datatables::of($query)->make(true);
+    }
 
-	private function events()
-	{
-		return View::make('pragmarx/tracker::events')
-			->with('events', Tracker::events($this->minutes))
-			->with('title', 'Events');
-	}
+    public function apiEventLogs()
+    {
+        $query = Tracker::eventlogs($this->minutes, false);
 
-	public function errors()
-	{
-		return View::make('pragmarx/tracker::errors')
-			->with('error_log', Tracker::errors($this->minutes))
-			->with('title', 'Errors');
-	}
+        $result = Datatables::of($query)
+            ->make(true);
+        return $result;
+    }
 
-	public function apiErrors()
-	{
-		$query = Tracker::errors($this->minutes, false);
+    public function apiUsers()
+    {
+        $username_column = Tracker::getConfig('authenticated_user_username_column');
 
-		$query->select(array(
-			               'id',
-			               'error_id',
-			               'session_id',
-			               'path_id',
-			               'updated_at',
-		               ));
+        return Datatables::of(Tracker::users($this->minutes, false))
+            ->edit_column('user_id', function ($row) use ($username_column) {
+                return "{$row->user->$username_column}";
+            })
+            ->edit_column('updated_at', function ($row) {
+                return "{$row->updated_at->diffForHumans()}";
+            })
+            ->make(true);
+    }
 
-		return Datatables::of($query)
-				->edit_column('updated_at', function($row) {
-					return "{$row->updated_at->diffForHumans()}";
-				})
-				->make(true);
-	}
+    public function apiVisits()
+    {
+        $username_column = Tracker::getConfig('authenticated_user_username_column');
 
-	public function apiEvents()
-	{
-		$query = Tracker::events($this->minutes, false);
+        $query = Tracker::sessions($this->minutes, false);
 
-		return Datatables::of($query)->make(true);
-	}
+        $query->select(array(
+            'id',
+            'uuid',
+            'user_id',
+            'device_id',
+            'agent_id',
+            'client_ip',
+            'referer_id',
+            'cookie_id',
+            'geoip_id',
+            'is_robot',
+            'updated_at',
+        ));
 
-	public function apiUsers()
-	{
-		$username_column = Tracker::getConfig('authenticated_user_username_column');
+        return Datatables::of($query)
+            ->edit_column('id', function ($row) use ($username_column) {
+                return link_to_route('tracker.stats.log', $row->id, ['uuid' => $row->uuid]);
+            })
+            ->add_column('country', function ($row) {
+                $cityName = $row->geoip && $row->geoip->city ? ' - ' . $row->geoip->city : '';
 
-		return Datatables::of(Tracker::users($this->minutes, false))
-				->edit_column('user_id', function($row) use ($username_column) {
-					return "{$row->user->$username_column}";
-				})
-				->edit_column('updated_at', function($row) {
-					return "{$row->updated_at->diffForHumans()}";
-				})
-				->make(true);
-	}
+                $countryName = ($row->geoip ? $row->geoip->country_name : '') . $cityName;
 
-	public function apiVisits()
-	{
-		$username_column = Tracker::getConfig('authenticated_user_username_column');
+                $countryCode = strtolower($row->geoip ? $row->geoip->country_code : '');
 
-		$query = Tracker::sessions($this->minutes, false);
+                $flag = $countryCode
+                    ? "<span class=\"f16\"><span class=\"flag $countryCode\" alt=\"$countryName\" /></span></span>"
+                    : '';
 
-		$query->select(array(
-               'id',
-               'uuid',
-               'user_id',
-               'device_id',
-               'agent_id',
-               'client_ip',
-               'referer_id',
-               'cookie_id',
-               'geoip_id',
-               'is_robot',
-               'updated_at',
-		));
+                return "$flag $countryName";
+            })
+            ->add_column('user', function ($row) use ($username_column) {
+                return $row->user ? $row->user->$username_column : 'guest';
+            })
+            ->add_column('device', function ($row) use ($username_column) {
+                $model = ($row->device->model && $row->device->model !== 'unavailable' ? '[' . $row->device->model . ']' : '');
 
-		return Datatables::of($query)
-				->edit_column('id', function($row) use ($username_column)
-				{
-					return link_to_route('tracker.stats.log', $row->id, ['uuid' => $row->uuid]);
-				})
+                $platform = ($row->device->platform ? ' [' . trim($row->device->platform . ' ' . $row->device->platform_version) . ']' : '');
 
-				->add_column('country', function ($row)
-				{
-					$cityName = $row->geoip && $row->geoip->city ? ' - '.$row->geoip->city : '';
+                $mobile = ($row->device->is_mobile ? ' [mobile device]' : '');
 
-					$countryName = ($row->geoip ? $row->geoip->country_name : '') . $cityName;
+                return $model || $platform || $mobile
+                    ? $row->device->kind . ' ' . $model . ' ' . $platform . ' ' . $mobile
+                    : '';
+            })
+            ->add_column('browser', function ($row) use ($username_column) {
+                return $row->agent && $row->agent
+                    ? $row->agent->browser . ' (' . $row->agent->browser_version . ')'
+                    : '';
 
-					$countryCode = strtolower($row->geoip ? $row->geoip->country_code : '');
+            })
+            ->add_column('referer', function ($row) use ($username_column) {
+                return $row->referer ? $row->referer->domain->name : '';
+            })
+            ->add_column('pageViews', function ($row) use ($username_column) {
+                return $row->page_views;
+            })
+            ->add_column('lastActivity', function ($row) use ($username_column) {
+                return $row->updated_at->diffForHumans();
+            })
+            ->make(true);
+    }
 
-					$flag = $countryCode
-							? "<span class=\"f16\"><span class=\"flag $countryCode\" alt=\"$countryName\" /></span></span>"
-							: '';
+    private function buildComposers()
+    {
+        $template_path = url('/') . Config::get('pragmarx/tracker::stats_template_path');
 
-					return "$flag $countryName";
-				})
-
-				->add_column('user', function($row) use ($username_column)
-				{
-					return $row->user ? $row->user->$username_column : 'guest';
-				})
-
-				->add_column('device', function($row) use ($username_column)
-				{
-					$model = ($row->device->model && $row->device->model !== 'unavailable' ? '['.$row->device->model.']' : '');
-
-					$platform = ($row->device->platform ? ' ['.trim($row->device->platform.' '.$row->device->platform_version).']' : '');
-
-					$mobile = ($row->device->is_mobile ? ' [mobile device]' : '');
-
-					return $model || $platform || $mobile
-							? $row->device->kind . ' ' . $model . ' ' . $platform . ' ' . $mobile
-							: '';
-				})
-
-				->add_column('browser', function($row) use ($username_column)
-				{
-					return $row->agent && $row->agent
-							? $row->agent->browser . ' ('.$row->agent->browser_version.')'
-							: '';
-
-				})
-
-				->add_column('referer', function($row) use ($username_column)
-				{
-					return $row->referer ? $row->referer->domain->name : '';
-				})
-
-				->add_column('pageViews', function($row) use ($username_column)
-				{
-					return $row->page_views;
-				})
-
-				->add_column('lastActivity', function($row) use ($username_column)
-				{
-					return $row->updated_at->diffForHumans();
-				})
-
-				->make(true);
-	}
-
-	private function buildComposers()
-	{
-		$template_path = url('/') . Config::get('pragmarx/tracker::stats_template_path');
-
-		View::composer('pragmarx/tracker::*', function($view) use ($template_path)
-		{
-			$view->with('stats_template_path', $template_path);
-		});
-	}
+        View::composer('pragmarx/tracker::*', function ($view) use ($template_path) {
+            $view->with('stats_template_path', $template_path);
+        });
+    }
 
 }
 

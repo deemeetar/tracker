@@ -30,4 +30,36 @@ class EventLog extends Base {
 	    'log_id',
 	);
 
+	public function allInThePeriod($minutes, $result)
+	{
+		$query =
+			$this
+				->select(
+					'tracker_events_log.id',
+					'tracker_events_log.event_id',
+					'tracker_events_log.log_id',
+					'tracker_events_log.updated_at',
+					'tracker_sessions.user_id',
+					'tracker_log.method',
+					'users.email',
+					'tracker_events.name',
+					'tracker_paths.path'
+				)
+				->from('tracker_events_log')
+				->period($minutes, 'tracker_events_log')
+				->join('tracker_events', 'tracker_events.id', '=', 'tracker_events_log.event_id')
+				->join('tracker_log', 'tracker_log.id', '=', 'tracker_events_log.log_id')
+				->join('tracker_sessions', 'tracker_sessions.id', '=', 'tracker_log.session_id')
+				->join('users', 'users.id', '=', 'tracker_sessions.user_id')
+				->join('tracker_paths', 'tracker_paths.id', '=', 'tracker_log.path_id')
+				->orderBy('tracker_events_log.created_at', 'desc');
+
+		if ($result)
+		{
+			return $query->get();
+		}
+
+		return $query;
+	}
+
 }

@@ -25,6 +25,7 @@ Route::group(['namespace' => $namespace], function() use ($prefix, $filter)
 			Route::get('api/errors', array('as' => 'tracker.stats.api.errors', 'uses' => 'Stats@apiErrors'));
 
 			Route::get('api/events', array('as' => 'tracker.stats.api.events', 'uses' => 'Stats@apiEvents'));
+			Route::get('api/eventlogs', array('as' => 'tracker.stats.api.eventlogs', 'uses' => 'Stats@apiEventLogs'));
 
 			Route::get('api/users', array('as' => 'tracker.stats.api.users', 'uses' => 'Stats@apiUsers'));
 

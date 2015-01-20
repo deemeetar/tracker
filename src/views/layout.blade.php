@@ -85,6 +85,9 @@
                             <a href="{{route('tracker.stats.index')}}?page=events" class="{{ Session::get('tracker.stats.page') =='events' ? 'active' : '' }}"><i class="fa fa-bolt fa-fw"></i> Events <span class="{{ Session::get('tracker.stats.page') =='events' ? 'fa arrow' : '' }}"></span></a>
                         </li>
                         <li>
+                            <a href="{{route('tracker.stats.index')}}?page=eventlogs" class="{{ Session::get('tracker.stats.page') =='eventlogs' ? 'active' : '' }}"><i class="fa fa-bolt fa-fw"></i> Event Logs <span class="{{ Session::get('tracker.stats.page') =='eventlogs' ? 'fa arrow' : '' }}"></span></a>
+                        </li>
+                        <li>
                             <a href="{{route('tracker.stats.index')}}?page=errors" class="{{ Session::get('tracker.stats.page') =='errors' ? 'active' : '' }}"><i class="fa fa-exclamation fa-fw"></i>Errors <span class="{{ Session::get('tracker.stats.page') =='errors' ? 'fa arrow' : '' }}"></span></a>
                         </li>
                     </ul>

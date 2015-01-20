@@ -337,6 +337,11 @@ class Tracker
     	return $this->dataRepositoryManager->users(Minutes::make($minutes), $results);
     }
 
+	public function eventlogs($minutes, $results = true)
+	{
+		return $this->dataRepositoryManager->eventlogs(Minutes::make($minutes), $results);
+	}
+
 	public function events($minutes, $results = true)
 	{
 		return $this->dataRepositoryManager->events(Minutes::make($minutes), $results);
