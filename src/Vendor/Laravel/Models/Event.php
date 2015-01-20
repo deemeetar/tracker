@@ -42,8 +42,7 @@ class Event extends Base {
 				->from('tracker_events')
 				->period($minutes, 'tracker_events_log')
 				->join('tracker_events_log', 'tracker_events_log.event_id', '=', 'tracker_events.id')
-				->groupBy('tracker_events.id', 'tracker_events.name')
-				->orderBy('total', 'desc');
+				->groupBy('tracker_events.id', 'tracker_events.name');
 
 		if ($result)
 		{
