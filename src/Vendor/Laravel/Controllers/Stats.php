@@ -221,6 +221,9 @@ class Stats extends Controller
 
         return Datatables::of(Tracker::users($this->minutes, false))
             ->edit_column('user_id', function ($row) use ($username_column) {
+                if(! $row->user ){
+                    return "User not found (id: $row->user_id)";
+                }
                 return "{$row->user->$username_column}";
             })
             ->edit_column('updated_at', function ($row) {

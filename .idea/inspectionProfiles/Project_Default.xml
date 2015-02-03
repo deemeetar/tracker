@@ -1,0 +1,10 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0" is_locked="false">
+    <option name="myName" value="Project Default" />
+    <option name="myLocal" value="false" />
+    <inspection_tool class="PhpCSValidationInspection" enabled="false" level="WEAK WARNING" enabled_by_default="false">
+      <option name="CODING_STANDARD" value="Custom" />
+      <option name="CUSTOM_RULESET_PATH" value="$USER_HOME$/.composer/vendor/squizlabs/php_codesniffer/CodeSniffer/Standards/PSR2" />
+    </inspection_tool>
+  </profile>
+</component>
